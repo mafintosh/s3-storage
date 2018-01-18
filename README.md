@@ -60,6 +60,10 @@ Read a value out
 
 Delete a value
 
+#### `s3.rename(src, dest, [callback])`
+
+Rename a folder/file
+
 #### `var stream = s3.list([options])`
 
 Create a list stream. Each data emitted looks like this
