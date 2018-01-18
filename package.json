@@ -1,0 +1,32 @@
+{
+  "name": "s3-storage",
+  "version": "0.0.0",
+  "description": "Small module wrapper for the AWS sdk that allows you to easily use s3 or the local file system",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.184.0",
+    "duplexify": "^3.5.3",
+    "from2": "^2.3.0",
+    "mime": "^2.2.0",
+    "mkdirp": "^0.5.1",
+    "stream-each": "^1.2.2",
+    "thunky": "^1.0.2"
+  },
+  "devDependencies": {
+    "standard": "^10.0.3",
+    "tape": "^4.8.0"
+  },
+  "scripts": {
+    "test": "standard && tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/s3-storage.git"
+  },
+  "author": "Mathias Buus (@mafintosh)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/s3-storage/issues"
+  },
+  "homepage": "https://github.com/mafintosh/s3-storage"
+}

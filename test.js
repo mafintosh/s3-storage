@@ -1,0 +1,104 @@
+var tape = require('tape')
+var path = require('path')
+var each = require('stream-each')
+
+run('fs', require('./fs')(path.join(__dirname, 'test-data')))
+if (process.env.AWS_SECRET_ACCESS_KEY) {
+  run('s3', require('./s3')('mafintosh-s3-storage-test'))
+}
+
+function run (name, st) {
+  tape(name + ': delete all', function (t) {
+    each(st.list(), function (data, next) {
+      st.del(data.key, next)
+    }, function () {
+      st.list()
+        .on('data', function () {
+          t.fail('should be empty')
+        })
+        .on('end', function () {
+          t.end()
+        })
+    })
+  })
+
+  tape(name + ': get non existing', function (t) {
+    st.get('nope', function (err) {
+      t.ok(err, 'should error')
+      t.end()
+    })
+  })
+
+  tape(name + ': put and get', function (t) {
+    t.plan(6)
+
+    st.put('hello', Buffer.from('world'), function (err) {
+      t.error(err, 'no error')
+      st.get('hello', function (err, buf) {
+        t.error(err, 'no error')
+        t.same(buf, Buffer.from('world'))
+      })
+    })
+
+    st.put('world', Buffer.from('hi'), function (err) {
+      t.error(err, 'no error')
+      st.get('world', function (err, buf) {
+        t.error(err, 'no error')
+        t.same(buf, Buffer.from('hi'))
+      })
+    })
+  })
+
+  tape(name + ': list', function (t) {
+    var expected = [
+      {key: 'hello', size: 5},
+      {key: 'world', size: 2}
+    ]
+
+    st.list()
+      .on('data', function (data) {
+        var next = expected.shift()
+        t.same(data.key, next.key)
+        t.same(data.size, next.size)
+        t.ok(data.modified, 'has date')
+      })
+      .on('end', function () {
+        t.same(expected.length, 0)
+        t.end()
+      })
+  })
+
+  tape(name + ': list marker', function (t) {
+    var expected = [
+      {key: 'world', size: 2}
+    ]
+
+    st.list({marker: 'hello'})
+      .on('data', function (data) {
+        var next = expected.shift()
+        t.same(data.key, next.key)
+        t.same(data.size, next.size)
+        t.ok(data.modified, 'has date')
+      })
+      .on('end', function () {
+        t.same(expected.length, 0)
+        t.end()
+      })
+  })
+
+  tape(name + ': del', function (t) {
+    st.del('hello', function (err) {
+      t.error(err, 'no error')
+      st.del('world', function (err) {
+        t.error(err, 'no error')
+        st.list()
+          .on('data', function (data) {
+            t.fail('should be empty')
+          })
+          .on('end', function () {
+            t.end()
+          })
+      })
+    })
+  })
+}

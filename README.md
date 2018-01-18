@@ -1,0 +1,85 @@
+# s3-storage
+
+Small module wrapper for the AWS sdk that allows you to easily use s3.
+
+Supports the local file system as well with the same set of operations so you can easily develop without having internet access
+
+```
+npm install s3-storage
+```
+
+## Usage
+
+``` js
+var s3 = require('s3-storage')('my-bucket', {
+  secretAccessKey: '...',
+  accessKeyId: '...'
+})
+
+s3.put('hello', 'world', function () {
+  s3.get('hello', console.log)
+})
+```
+
+Or if you want use the file system locally instead
+
+``` js
+var s3 = require('s3-storage')('my-bucket', {
+  type: 'fs' // will store the data in ./my-bucket
+})
+
+// s3 has the same api
+```
+
+## API
+
+#### `var s3 = s3storage(bucket, [options])`
+
+Make a new storage instance. Options include:
+
+``` js
+{
+  type: 's3' | 'fs' // defaults to s3
+  secretAccessKey: '...'
+  accessKeyId: '...', // both forwarded to the AWS sdk
+  region: 'us-west-2' // the default region
+}
+```
+
+#### `s3.put(key, value, [callback])`
+
+Write a new value.
+
+#### `s3.get(key, callback)`
+
+Read a value out
+
+#### `var stream = s3.list([options])`
+
+Create a list stream. Each data emitted looks like this
+
+``` js
+{
+  key: 'value/key', // the value key
+  size: 24, // how many bytes
+  modified: Date() // when was it modified last?
+}
+```
+
+Options include:
+
+``` js
+{
+  prefix: 'foo', // only list keys under foo
+  marker: 'foo/bar/baz', // only list keys after foo/bar/baz
+  limit: 14 // only return this many
+}
+```
+
+## Acknowledgements
+
+This project was kindly sponsored by nearForm.
+
+## License
+
+MIT
