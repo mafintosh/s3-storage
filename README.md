@@ -8,6 +8,8 @@ Supports the local file system as well with the same set of operations so you ca
 npm install s3-storage
 ```
 
+[![build status](https://travis-ci.org/mafintosh/s3-storage.svg?branch=master)](https://travis-ci.org/mafintosh/s3-storage)
+
 ## Usage
 
 ``` js
