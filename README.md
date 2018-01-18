@@ -56,6 +56,10 @@ Write a new value.
 
 Read a value out
 
+#### `s3.del(key, [callback])`
+
+Delete a value
+
 #### `var stream = s3.list([options])`
 
 Create a list stream. Each data emitted looks like this
