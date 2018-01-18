@@ -3,6 +3,7 @@ var path = require('path')
 var from = require('from2')
 var mkdirp = require('mkdirp')
 var duplexify = require('duplexify')
+var each = require('stream-each')
 
 module.exports = FSStorage
 
@@ -109,12 +110,29 @@ FSStorage.prototype.del = function (key, cb) {
 
 FSStorage.prototype.rename = function (src, dest, cb) {
   if (!cb) cb = noop
+
+  var self = this
+  var prefix = src
+
   src = normalize(this.dir, src)
   dest = normalize(this.dir, dest)
-  mkdirp(path.dirname(dest), function (err) {
-    if (err) return cb(err)
-    fs.rename(src, dest, cb)
-  })
+
+  each(this.list({prefix}), ondata, cb)
+
+  function ondata (data, next) {
+    var key = normalize(self.dir, data.key)
+    rename(key, key.replace(src, dest), next)
+  }
+
+  function rename (a, b) {
+    mkdirp(path.dirname(b), function (err) {
+      if (err) return cb(err)
+      fs.rename(a, b, function (err) {
+        if (err) return cb(err)
+        clean(self.dir, a, cb)
+      })
+    })
+  }
 }
 
 function clean (dir, key, cb) {
