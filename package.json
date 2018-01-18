@@ -1,6 +1,6 @@
 {
   "name": "s3-storage",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Small module wrapper for the AWS sdk that allows you to easily use s3 or the local file system",
   "main": "index.js",
   "dependencies": {
