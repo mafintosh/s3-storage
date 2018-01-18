@@ -86,10 +86,25 @@ function run (name, st) {
       })
   })
 
+  tape(name + ': rename', function (t) {
+    t.plan(4)
+
+    st.rename('world', 'foo/bar/baz', function (err) {
+      t.error(err, 'no error')
+      st.get('world', function (err) {
+        t.ok(err, 'should error')
+      })
+      st.get('foo/bar/baz', function (err, data) {
+        t.error(err, 'no error')
+        t.same(data, Buffer.from('hi'))
+      })
+    })
+  })
+
   tape(name + ': del', function (t) {
     st.del('hello', function (err) {
       t.error(err, 'no error')
-      st.del('world', function (err) {
+      st.del('foo/bar/baz', function (err) {
         t.error(err, 'no error')
         st.list()
           .on('data', function (data) {
