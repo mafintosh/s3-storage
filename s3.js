@@ -63,11 +63,12 @@ S3Storage.prototype.createListStream = function (opts) {
 
 S3Storage.prototype.rename = function (from, to, cb) {
   var self = this
-  var stream = this.createKeyStream({prefix: from})
+  var stream = this.list({prefix: from})
 
   each(stream, ondata, cb)
 
-  function ondata (key, next) {
+  function ondata (data, next) {
+    var key = data.key
     self.s3.copyObject({
       Bucket: self.bucket,
       CopySource: self.bucket + '/' + key,
