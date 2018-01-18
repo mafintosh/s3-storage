@@ -108,9 +108,13 @@ FSStorage.prototype.del = function (key, cb) {
 }
 
 FSStorage.prototype.rename = function (src, dest, cb) {
+  if (!cb) cb = noop
   src = normalize(this.dir, src)
-  dest = normalize(this.dir, src)
-  fs.rename(src, dest, cb || noop)
+  dest = normalize(this.dir, dest)
+  mkdirp(path.dirname(dest), function (err) {
+    if (err) return cb(err)
+    fs.rename(src, dest, cb)
+  })
 }
 
 function clean (dir, key, cb) {
