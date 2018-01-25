@@ -134,7 +134,8 @@ S3Storage.prototype._open = function (cb) {
     }
   }, function (err) {
     // if we get a 409 it simply means we already created the bucket
-    if (err && err.statusCode !== 409) return cb(err)
+    // if we get a 403 it is access denied, but thats prob because the AWS user does not have that perm
+    if (err && err.statusCode !== 409 && err.statusCode !== 403) return cb(err)
     cb(null)
   })
 }
