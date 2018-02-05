@@ -86,7 +86,6 @@ function run (name, st) {
       })
   })
 
-
   tape(name + ': list marker', function (t) {
     var expected = [
       {key: 'world', size: 2}
