@@ -54,7 +54,7 @@ S3Storage.prototype.createListStream = function (opts) {
         var next = {key: c.Key, size: c.Size, modified: c.LastModified}
         limit--
         marker = c.Key
-        if (i < contents.length - 1) stream.push(next)
+        if (i < len - 1) stream.push(next)
         else cb(null, next)
       }
     })

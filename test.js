@@ -68,6 +68,25 @@ function run (name, st) {
       })
   })
 
+  tape(name + ': list limit', function (t) {
+    var expected = [
+      {key: 'hello', size: 5}
+    ]
+
+    st.list({limit: 1})
+      .on('data', function (data) {
+        var next = expected.shift()
+        t.same(data.key, next.key)
+        t.same(data.size, next.size)
+        t.ok(data.modified, 'has date')
+      })
+      .on('end', function () {
+        t.same(expected.length, 0)
+        t.end()
+      })
+  })
+
+
   tape(name + ': list marker', function (t) {
     var expected = [
       {key: 'world', size: 2}
