@@ -60,6 +60,20 @@ Read a value out
 
 Delete a value
 
+#### `s3.createReadStream(key, options)`
+
+Create a readable stream to a key.
+
+#### `s3.createWriteStream(key, options)`
+
+Create a writeable stream to a key. Options include
+
+``` js
+{
+  length: sizeOfStream, // required
+}
+```
+
 #### `s3.rename(src, dest, [callback])`
 
 Rename a folder/file

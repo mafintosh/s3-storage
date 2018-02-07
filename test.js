@@ -119,6 +119,20 @@ function run (name, st) {
     })
   })
 
+  tape(name + ': read/write stream', function (t) {
+    var ws = st.createWriteStream('hello', {length: 512 * 1024})
+    for (var i = 0; i < 512; i++) ws.write(Buffer.alloc(1024))
+    ws.end(function () {
+      var rs = st.createReadStream('hello')
+      var buffer = []
+      rs.on('data', data => buffer.push(data))
+      rs.on('end', function () {
+        t.same(Buffer.concat(buffer), Buffer.alloc(512 * 1024))
+        t.end()
+      })
+    })
+  })
+
   tape(name + ': del', function (t) {
     st.del('hello', function (err) {
       t.error(err, 'no error')

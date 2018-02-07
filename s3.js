@@ -3,6 +3,9 @@ var thunky = require('thunky')
 var from = require('from2')
 var mime = require('mime')
 var each = require('stream-each')
+var stream = require('readable-stream')
+var duplexify = require('duplexify')
+var bulk = require('bulk-write-stream')
 
 module.exports = S3Storage
 
@@ -91,6 +94,74 @@ S3Storage.prototype.del = function (key, cb) {
       Key: key
     }, cb)
   })
+}
+
+S3Storage.prototype.createReadStream = function (key) {
+  var proxy = duplexify()
+  var self = this
+
+  proxy.setWritable(false)
+  this.ready(function (err) {
+    if (err) return proxy.destroy(err)
+    proxy.setReadable(self.s3.getObject({
+      Bucket: self.bucket,
+      Key: key
+    }).createReadStream())
+  })
+
+  return proxy
+}
+
+S3Storage.prototype.createWriteStream = function (key, opts) {
+  if (typeof opts === 'number') opts = {length: opts}
+  if (!opts) opts = {}
+
+  var self = this
+  var ondrain = null
+  var onflush = null
+  var flushed = false
+  var proxy = new stream.Readable({read: read})
+  var ws = bulk(write, flush)
+
+  this.ready(function (err) {
+    if (err) {
+      proxy.push(null)
+      ws.destroy(err)
+      return
+    }
+
+    self.s3.putObject({
+      Bucket: self.bucket,
+      Key: key,
+      ContentLength: opts.length,
+      Body: proxy
+    }, function (err) {
+      if (err) return ws.destroy(err)
+      flushed = true
+      if (onflush) onflush()
+    })
+  })
+
+  return ws
+
+  function read () {
+    if (!ondrain) return
+    var cb = ondrain
+    ondrain = null
+    cb()
+  }
+
+  function write (data, cb) {
+    var drained = true
+    for (var i = 0; i < data.length; i++) drained = proxy.push(data[i])
+    if (!drained) ondrain = cb
+    else cb()
+  }
+
+  function flush (cb) {
+    if (flushed) return cb()
+    onflush = cb
+  }
 }
 
 S3Storage.prototype.put = function (key, buf, cb) {
