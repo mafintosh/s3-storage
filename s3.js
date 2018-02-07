@@ -96,6 +96,23 @@ S3Storage.prototype.del = function (key, cb) {
   })
 }
 
+S3Storage.prototype.stat = function (key, cb) {
+  var self = this
+  this.ready(function (err) {
+    if (err) return cb(err)
+    self.s3.headObject({
+      Bucket: self.bucket,
+      Key: key
+    }, function (err, data) {
+      if (err) return cb(err)
+      cb(null, {
+        size: data.ContentLength,
+        modified: new Date(data.LastModified)
+      })
+    })
+  })
+}
+
 S3Storage.prototype.createReadStream = function (key) {
   var proxy = duplexify()
   var self = this

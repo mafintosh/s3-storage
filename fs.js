@@ -96,6 +96,13 @@ FSStorage.prototype.get = function (key, cb) {
   fs.readFile(key, cb)
 }
 
+FSStorage.prototype.stat = function (key, cb) {
+  fs.stat(key, function (err, st) {
+    if (err) return cb(err)
+    cb(null, {size: st.size, modified: st.mtime})
+  })
+}
+
 FSStorage.prototype.del = function (key, cb) {
   if (!cb) cb = noop
 

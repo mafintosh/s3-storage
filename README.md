@@ -78,6 +78,17 @@ Create a writeable stream to a key. Options include
 
 Rename a folder/file
 
+#### `s3.stat(key, callback)`
+
+Return stat info about a key. The returned object looks like this:
+
+``` js
+{
+  size: sizeOfValue,
+  modified: lastModifiedDate
+}
+```
+
 #### `var stream = s3.list([options])`
 
 Create a list stream. Each data emitted looks like this
