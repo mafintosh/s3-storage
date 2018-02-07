@@ -97,6 +97,7 @@ FSStorage.prototype.get = function (key, cb) {
 }
 
 FSStorage.prototype.stat = function (key, cb) {
+  key = normalize(this.dir, key)
   fs.stat(key, function (err, st) {
     if (err) return cb(err)
     cb(null, {size: st.size, modified: st.mtime})
