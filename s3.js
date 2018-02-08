@@ -14,7 +14,7 @@ function S3Storage (bucket, opts) {
   if (!opts) opts = {}
 
   this.bucket = bucket.replace(/^s3:\/\//, '')
-  this.region = opts.region || 'us-west-2'
+  this.region = opts.region || 'us-east-1' // default aws region
   this.s3 = new S3(opts)
   this.ready = thunky(this._open.bind(this))
 }
@@ -215,12 +215,11 @@ S3Storage.prototype.get = function (key, cb) {
 }
 
 S3Storage.prototype._open = function (cb) {
-  this.s3.createBucket({
-    Bucket: this.bucket,
-    CreateBucketConfiguration: {
-      LocationConstraint: this.region
-    }
-  }, function (err) {
+  var opts = this.region === 'us-east-1'
+    ? {Bucket: this.bucket}
+    : {Bucket: this.bucket, CreateBucketConfiguration: {LocationConstraint: this.region}}
+
+  this.s3.createBucket(opts, function (err) {
     // if we get a 409 it simply means we already created the bucket
     // if we get a 403 it is access denied, but thats prob because the AWS user does not have that perm
     if (err && err.statusCode !== 409 && err.statusCode !== 403) return cb(err)
