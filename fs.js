@@ -132,7 +132,7 @@ FSStorage.prototype.rename = function (src, dest, cb) {
     rename(key, key.replace(src, dest), next)
   }
 
-  function rename (a, b) {
+  function rename (a, b, cb) {
     mkdirp(path.dirname(b), function (err) {
       if (err) return cb(err)
       fs.rename(a, b, function (err) {
