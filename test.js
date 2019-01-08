@@ -50,18 +50,21 @@ function run (name, st) {
   })
 
   tape(name + ': put and get metadata', function (t) {
-    st.put('hello', Buffer.from('world'), {
+    st.put('message', Buffer.from('world'), {
       sender: 'goto-bus-stop',
       recipient: 'world'
     }, function (err) {
       t.error(err, 'no error')
-      st.get('hello', function (err, buf, meta) {
+      st.rename('message', 'hello', function (err) {
         t.error(err, 'no error')
-        t.same(meta, {
-          sender: 'goto-bus-stop',
-          recipient: 'world'
+        st.get('hello', function (err, buf, meta) {
+          t.error(err, 'no error')
+          t.same(meta, {
+            sender: 'goto-bus-stop',
+            recipient: 'world'
+          })
+          t.end()
         })
-        t.end()
       })
     })
   })

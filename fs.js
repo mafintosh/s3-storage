@@ -161,7 +161,13 @@ FSStorage.prototype.rename = function (src, dest, cb) {
 
   function ondata (data, next) {
     var key = normalize(self.dir, data.key)
-    rename(key, key.replace(src, dest), next)
+    rename(key, key.replace(src, dest), function (err) {
+      if (err) return next(err)
+      rename(key + '.s3meta', key.replace(src, dest) + '.s3meta', function (err) {
+        if (err && err.code !== 'ENOENT') return next(err)
+        next(null)
+      })
+    })
   }
 
   function rename (a, b, cb) {
