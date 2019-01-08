@@ -39,7 +39,9 @@ FSStorage.prototype.createListStream = function (opts) {
       fs.readdir(next, function (err, files) {
         if (err) return cb(err)
         for (var i = files.length - 1; i >= 0; i--) {
-          stack.push(path.join(next, files[i]))
+          if (!/\.s3meta$/.test(files[i])) {
+            stack.push(path.join(next, files[i]))
+          }
         }
         read(size, cb)
       })
@@ -49,10 +51,16 @@ FSStorage.prototype.createListStream = function (opts) {
       var key = next.replace(self.dir, '').slice(1).replace(/\\/g, '/')
       if (key <= marker) return read(size, cb)
       limit--
-      cb(null, {
+      var data = {
         key: key,
         modified: st.mtime,
         size: st.size
+      }
+      fs.readFile(key + '.s3meta', function (err, meta) {
+        // ENOENT just means no meta
+        if (err && err.code !== 'ENOENT') return cb(err)
+        if (meta) data.meta = JSON.parse(meta)
+        cb(null, data)
       })
     }
   })
@@ -76,13 +84,26 @@ FSStorage.prototype.createWriteStream = function (key) {
   return dup
 }
 
-FSStorage.prototype.put = function (key, val, cb) {
+FSStorage.prototype.put = function (key, val, meta, cb) {
+  if (typeof meta === 'function') {
+    cb = meta
+    meta = undefined
+  }
   if (!cb) cb = noop
 
   key = normalize(this.dir, key)
+  var left = meta ? 2 : 1
+  function done () {
+    left -= 1
+    if (left === 0) cb(null)
+  }
+
   mkdirp(path.dirname(key), function (err) {
     if (err) return cb(err)
-    fs.writeFile(key, val, cb)
+    fs.writeFile(key, val, done)
+    if (meta) {
+      fs.writeFile(key + '.s3meta', JSON.stringify(meta), done)
+    }
   })
 }
 
@@ -93,7 +114,15 @@ FSStorage.prototype.createReadStream = function (key) {
 
 FSStorage.prototype.get = function (key, cb) {
   key = normalize(this.dir, key)
-  fs.readFile(key, cb)
+  fs.readFile(key, function (err, body) {
+    if (err) return cb(err)
+    fs.readFile(key + '.s3meta', function (err, meta) {
+      // ENOENT just means no meta
+      if (err && err.code !== 'ENOENT') return cb(err)
+      if (meta) meta = JSON.parse(meta)
+      cb(null, body, meta)
+    })
+  })
 }
 
 FSStorage.prototype.stat = function (key, cb) {
@@ -112,7 +141,10 @@ FSStorage.prototype.del = function (key, cb) {
 
   fs.unlink(key, function (err) {
     if (err) return cb(err)
-    clean(self.dir, key, cb)
+    fs.unlink(key + '.s3meta', function (err) {
+      if (err && err.code !== 'ENOENT') return cb(err)
+      clean(self.dir, key, cb)
+    })
   })
 }
 

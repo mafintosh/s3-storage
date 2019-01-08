@@ -54,7 +54,12 @@ S3Storage.prototype.createListStream = function (opts) {
 
       for (var i = 0; i < len; i++) {
         var c = contents[i]
-        var next = {key: c.Key, size: c.Size, modified: c.LastModified}
+        var next = {
+          key: c.Key,
+          size: c.Size,
+          modified: c.LastModified,
+          meta: c.Meta
+        }
         limit--
         marker = c.Key
         if (i < len - 1) stream.push(next)
@@ -181,7 +186,11 @@ S3Storage.prototype.createWriteStream = function (key, opts) {
   }
 }
 
-S3Storage.prototype.put = function (key, buf, cb) {
+S3Storage.prototype.put = function (key, buf, meta, cb) {
+  if (typeof meta === 'function') {
+    cb = meta
+    meta = undefined
+  }
   if (!cb) cb = noop
 
   var self = this
@@ -193,7 +202,8 @@ S3Storage.prototype.put = function (key, buf, cb) {
       Bucket: self.bucket,
       ContentType: type,
       Key: key,
-      Body: buf
+      Body: buf,
+      Metadata: meta
     }, cb)
   })
 }
@@ -209,7 +219,7 @@ S3Storage.prototype.get = function (key, cb) {
       Key: key
     }, function (err, data) {
       if (err) return cb(err)
-      cb(null, data.Body)
+      cb(null, data.Body, data.Metadata)
     })
   })
 }

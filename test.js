@@ -4,7 +4,7 @@ var each = require('stream-each')
 
 run('fs', require('./fs')(path.join(__dirname, 'test-data')))
 if (process.env.AWS_SECRET_ACCESS_KEY) {
-  run('s3', require('./s3')('mafintosh-s3-storage-test'))
+  run('s3', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test'))
 }
 
 function run (name, st) {
@@ -49,9 +49,26 @@ function run (name, st) {
     })
   })
 
+  tape(name + ': put and get metadata', function (t) {
+    st.put('hello', Buffer.from('world'), {
+      sender: 'goto-bus-stop',
+      recipient: 'world'
+    }, function (err) {
+      t.error(err, 'no error')
+      st.get('hello', function (err, buf, meta) {
+        t.error(err, 'no error')
+        t.same(meta, {
+          sender: 'goto-bus-stop',
+          recipient: 'world'
+        })
+        t.end()
+      })
+    })
+  })
+
   tape(name + ': list', function (t) {
     var expected = [
-      {key: 'hello', size: 5},
+      {key: 'hello', size: 5, meta: {sender: 'goto-bus-stop', recipient: 'world'}},
       {key: 'world', size: 2}
     ]
 
@@ -70,7 +87,7 @@ function run (name, st) {
 
   tape(name + ': list limit', function (t) {
     var expected = [
-      {key: 'hello', size: 5}
+      {key: 'hello', size: 5, meta: {sender: 'goto-bus-stop', recipient: 'world'}}
     ]
 
     st.list({limit: 1})
