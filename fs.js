@@ -51,16 +51,10 @@ FSStorage.prototype.createListStream = function (opts) {
       var key = next.replace(self.dir, '').slice(1).replace(/\\/g, '/')
       if (key <= marker) return read(size, cb)
       limit--
-      var data = {
+      cb(null, {
         key: key,
         modified: st.mtime,
         size: st.size
-      }
-      fs.readFile(key + '.s3meta', function (err, meta) {
-        // ENOENT just means no meta
-        if (err && err.code !== 'ENOENT') return cb(err)
-        if (meta) data.meta = JSON.parse(meta)
-        cb(null, data)
       })
     }
   })
