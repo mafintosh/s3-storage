@@ -48,7 +48,7 @@ Make a new storage instance. Options include:
 }
 ```
 
-#### `s3.put(key, value, [callback])`
+#### `s3.put(key, value, [metadata], [callback])`
 
 Write a new value.
 

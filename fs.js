@@ -39,7 +39,9 @@ FSStorage.prototype.createListStream = function (opts) {
       fs.readdir(next, function (err, files) {
         if (err) return cb(err)
         for (var i = files.length - 1; i >= 0; i--) {
-          stack.push(path.join(next, files[i]))
+          if (!/\.s3meta$/.test(files[i])) {
+            stack.push(path.join(next, files[i]))
+          }
         }
         read(size, cb)
       })
@@ -76,13 +78,25 @@ FSStorage.prototype.createWriteStream = function (key) {
   return dup
 }
 
-FSStorage.prototype.put = function (key, val, cb) {
+FSStorage.prototype.put = function (key, val, meta, cb) {
+  if (typeof meta === 'function') {
+    cb = meta
+    meta = undefined
+  }
   if (!cb) cb = noop
 
   key = normalize(this.dir, key)
+
   mkdirp(path.dirname(key), function (err) {
     if (err) return cb(err)
-    fs.writeFile(key, val, cb)
+    fs.writeFile(key, val, function (err) {
+      if (err) return cb(err)
+      if (meta) {
+        fs.writeFile(key + '.s3meta', JSON.stringify(meta), cb)
+      } else {
+        cb(null)
+      }
+    })
   })
 }
 
@@ -93,7 +107,15 @@ FSStorage.prototype.createReadStream = function (key) {
 
 FSStorage.prototype.get = function (key, cb) {
   key = normalize(this.dir, key)
-  fs.readFile(key, cb)
+  fs.readFile(key, function (err, body) {
+    if (err) return cb(err)
+    fs.readFile(key + '.s3meta', function (err, meta) {
+      // ENOENT just means no meta
+      if (err && err.code !== 'ENOENT') return cb(err)
+      if (meta) meta = JSON.parse(meta)
+      cb(null, body, meta)
+    })
+  })
 }
 
 FSStorage.prototype.stat = function (key, cb) {
@@ -112,7 +134,10 @@ FSStorage.prototype.del = function (key, cb) {
 
   fs.unlink(key, function (err) {
     if (err) return cb(err)
-    clean(self.dir, key, cb)
+    fs.unlink(key + '.s3meta', function (err) {
+      if (err && err.code !== 'ENOENT') return cb(err)
+      clean(self.dir, key, cb)
+    })
   })
 }
 
@@ -129,7 +154,13 @@ FSStorage.prototype.rename = function (src, dest, cb) {
 
   function ondata (data, next) {
     var key = normalize(self.dir, data.key)
-    rename(key, key.replace(src, dest), next)
+    rename(key, key.replace(src, dest), function (err) {
+      if (err) return next(err)
+      rename(key + '.s3meta', key.replace(src, dest) + '.s3meta', function (err) {
+        if (err && err.code !== 'ENOENT') return next(err)
+        next(null)
+      })
+    })
   }
 
   function rename (a, b, cb) {
