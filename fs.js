@@ -86,18 +86,17 @@ FSStorage.prototype.put = function (key, val, meta, cb) {
   if (!cb) cb = noop
 
   key = normalize(this.dir, key)
-  var left = meta ? 2 : 1
-  function done () {
-    left -= 1
-    if (left === 0) cb(null)
-  }
 
   mkdirp(path.dirname(key), function (err) {
     if (err) return cb(err)
-    fs.writeFile(key, val, done)
-    if (meta) {
-      fs.writeFile(key + '.s3meta', JSON.stringify(meta), done)
-    }
+    fs.writeFile(key, val, function (err) {
+      if (err) return cb(err)
+      if (meta) {
+        fs.writeFile(key + '.s3meta', JSON.stringify(meta), cb)
+      } else {
+        cb(null)
+      }
+    })
   })
 }
 
