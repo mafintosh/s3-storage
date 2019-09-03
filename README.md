@@ -44,7 +44,11 @@ Make a new storage instance. Options include:
   type: 's3' | 'fs' // defaults to s3
   secretAccessKey: '...'
   accessKeyId: '...', // both forwarded to the AWS sdk
-  region: 'us-west-2' // the default region
+  region: 'us-west-2', // the default region
+  // Prefix all operations. eg `test` to prefix all under `test/`
+  // note that '' results in the empty prefix, which means all your objects
+  // will go in the folder `/`
+  prefix: null
 }
 ```
 

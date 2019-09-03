@@ -7,9 +7,10 @@ var each = require('stream-each')
 
 module.exports = FSStorage
 
-function FSStorage (dir) {
-  if (!(this instanceof FSStorage)) return new FSStorage(dir)
-  this.dir = path.resolve(dir.replace(/^fs:\/\//, ''))
+function FSStorage (dir, opts) {
+  if (!(this instanceof FSStorage)) return new FSStorage(dir, opts)
+  if (!opts) opts = {}
+  this.dir = path.resolve(path.join(dir.replace(/^fs:\/\//, ''), opts.prefix || ''))
 }
 
 FSStorage.prototype.list =

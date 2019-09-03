@@ -17,6 +17,7 @@ function S3Storage (bucket, opts) {
   this.region = opts.region || 'us-east-1' // default aws region
   this.s3 = new S3(opts)
   this.ready = thunky(this._open.bind(this))
+  this.prefix = opts.prefix || null
 }
 
 S3Storage.prototype.list =
@@ -24,7 +25,7 @@ S3Storage.prototype.createListStream = function (opts) {
   if (!opts) opts = {}
 
   var self = this
-  var marker = opts.marker || ''
+  var marker = join(self.prefix, opts.marker || null)
   var limit = opts.limit || Infinity
   var stream = from.obj(read)
   var open = false
@@ -43,7 +44,7 @@ S3Storage.prototype.createListStream = function (opts) {
     if (!open) return openAndRead(size, cb)
     self.s3.listObjects({
       Bucket: self.bucket,
-      Prefix: opts.prefix,
+      Prefix: join(self.prefix, opts.prefix || null),
       Marker: marker
     }, function (err, res) {
       if (err) return cb(err)
@@ -54,7 +55,7 @@ S3Storage.prototype.createListStream = function (opts) {
 
       for (var i = 0; i < len; i++) {
         var c = contents[i]
-        var next = {key: c.Key, size: c.Size, modified: c.LastModified}
+        var next = {key: c.Key.replace(self.prefix + '/', ''), size: c.Size, modified: c.LastModified}
         limit--
         marker = c.Key
         if (i < len - 1) stream.push(next)
@@ -72,10 +73,11 @@ S3Storage.prototype.rename = function (from, to, cb) {
 
   function ondata (data, next) {
     var key = data.key
+
     self.s3.copyObject({
       Bucket: self.bucket,
-      CopySource: self.bucket + '/' + key,
-      Key: key.replace(from, to) // from is *always* the first part of key
+      CopySource: self.bucket + '/' + join(self.prefix, key),
+      Key: join(self.prefix, key.replace(from, to)) // from is *always* in the beginning of the key
     }, function (err) {
       if (err) return next(err)
       self.del(key, next)
@@ -91,7 +93,7 @@ S3Storage.prototype.del = function (key, cb) {
 
     self.s3.deleteObject({
       Bucket: self.bucket,
-      Key: key
+      Key: join(self.prefix, key)
     }, cb)
   })
 }
@@ -102,7 +104,7 @@ S3Storage.prototype.stat = function (key, cb) {
     if (err) return cb(err)
     self.s3.headObject({
       Bucket: self.bucket,
-      Key: key
+      Key: join(self.prefix, key)
     }, function (err, data) {
       if (err) return cb(err)
       cb(null, {
@@ -122,7 +124,7 @@ S3Storage.prototype.createReadStream = function (key) {
     if (err) return proxy.destroy(err)
     proxy.setReadable(self.s3.getObject({
       Bucket: self.bucket,
-      Key: key
+      Key: join(self.prefix, key)
     }).createReadStream())
   })
 
@@ -149,7 +151,7 @@ S3Storage.prototype.createWriteStream = function (key, opts) {
 
     self.s3.putObject({
       Bucket: self.bucket,
-      Key: key,
+      Key: join(self.prefix, key),
       ContentLength: opts.length,
       Body: proxy
     }, function (err) {
@@ -193,10 +195,11 @@ S3Storage.prototype.put = function (key, buf, meta, cb) {
 
   this.ready(function (err) {
     if (err) return cb(err)
+
     self.s3.putObject({
       Bucket: self.bucket,
       ContentType: type,
-      Key: key,
+      Key: join(self.prefix, key),
       Body: buf,
       Metadata: meta
     }, cb)
@@ -209,9 +212,10 @@ S3Storage.prototype.get = function (key, cb) {
   var self = this
   this.ready(function (err) {
     if (err) return cb(err)
+
     self.s3.getObject({
       Bucket: self.bucket,
-      Key: key
+      Key: join(self.prefix, key)
     }, function (err, data) {
       if (err) return cb(err)
       cb(null, data.Body, data.Metadata)
@@ -233,3 +237,7 @@ S3Storage.prototype._open = function (cb) {
 }
 
 function noop () {}
+
+function join (...args) {
+  return args.filter(s => s != null).join('/').replace(/\/{2,}/g, '/')
+}

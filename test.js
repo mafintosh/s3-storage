@@ -3,8 +3,10 @@ var path = require('path')
 var each = require('stream-each')
 
 run('fs', require('./fs')(path.join(__dirname, 'test-data')))
+run('fs', require('./fs')(path.join(__dirname, 'test-data'), { prefix: 'subdir' }))
 if (process.env.AWS_SECRET_ACCESS_KEY) {
   run('s3', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test'))
+  run('s3', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test', { prefix: 'subdir' }))
 }
 
 function run (name, st) {
