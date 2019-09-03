@@ -1,9 +1,12 @@
 language: node_js
+# Concurrency is set to 1 on travis otherwise there might be data races with
+# such a large matrix
 node_js:
-- '4'
-- '6'
 - '8'
-- '9'
+- '10'
+- '12'
+- node
+- lts/*
 env:
   global:
   - secure: tpiUuNCp2o8XQCYXdH9jA9/AOJ40nFJANh//rNYzckHXjWK/Z8E3ORLGd53WWd6Lt+/QErC6q41gqDH3vpcYf60LhJJy10fHYiKK1MOjkCCtsfBTKtl/2DvCvy8MQuH7zzXLu7h0boIY1g1E3zHGTPmSYt2hS0ZsLtVIsb5QTApdH9NZHmTk5/VAI1MepCTZ8AI/gpcMNp/tKnfl31WsUR1UMEGms1gJxaHd0b3Z09DJYZDiXyQ64+w3TK0v2ZEJl8s+x+2gxh/wRHIS7yDpVLymPpee9Vm7LzfKlIpcuLSN8v/W49HdjLZShBvzVcr/RHf+OqdtuwgUsjGVvUWpi+7k1HmXFNyoidS5mov3zG3y7bgzOmSm2tllPXw3DIyq/hkCeyi+r95YnWvCLxGb98i87BUzTfjW9Pm4oQ3O03Xz4mNNfP/yhStS1IxnWD7gImpXnws914z0DYDgwqL6x8cetvI6gSPwdS5Ke/vkNuD5Bdy19BTyGh70tg51aOwW6guirFW87n3JN2KQFCsdfeVLl+wrvvwFi5lXgbeaTjwQV7q9ccERpiS9NnLDmhDg7OyibcgJP3uWTL9SnFatPhS8ROpx86/gbIbI3S/PWvVqooz/JB5H2zdT4Imb3nB5+jEjPyQ/kDooBs51tIkDhb9P+4OXYKq3ZFbv/Qfs480=
