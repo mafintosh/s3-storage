@@ -5,8 +5,8 @@ var each = require('stream-each')
 run('fs', require('./fs')(path.join(__dirname, 'test-data')))
 run('fs prefix', require('./fs')(path.join(__dirname, 'test-data'), { prefix: 'subdir' }))
 if (process.env.AWS_SECRET_ACCESS_KEY) {
-  run('s3', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test'))
-  run('s3 prefix', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test', { prefix: 'subdir' }))
+  run('s3', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test', { region: process.env.S3_STORAGE_REGION }))
+  run('s3 prefix', require('./s3')(process.env.S3_STORAGE_BUCKET || 'mafintosh-s3-storage-test', { region: process.env.S3_STORAGE_REGION, prefix: 'subdir' }))
 }
 
 function run (name, st) {
@@ -32,13 +32,21 @@ function run (name, st) {
   })
 
   tape(name + ': put and get', function (t) {
-    t.plan(6)
+    t.plan(10)
 
-    st.put('hello', Buffer.from('world'), function (err) {
+    st.exists('hello', function (err, exists) {
       t.error(err, 'no error')
-      st.get('hello', function (err, buf) {
+      t.notOk(exists)
+      st.put('hello', Buffer.from('world'), function (err) {
         t.error(err, 'no error')
-        t.same(buf, Buffer.from('world'))
+        st.exists('hello', function (err, exists) {
+          t.error(err, 'no error')
+          t.ok(exists)
+          st.get('hello', function (err, buf) {
+            t.error(err, 'no error')
+            t.same(buf, Buffer.from('world'))
+          })
+        })
       })
     })
 

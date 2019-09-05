@@ -119,6 +119,14 @@ FSStorage.prototype.get = function (key, cb) {
   })
 }
 
+FSStorage.prototype.exists = function (key, cb) {
+  this.stat(key, function (err) {
+    if (err && err.code === 'ENOENT') return cb(null, false)
+    if (err) return cb(err, false)
+    cb(null, true)
+  })
+}
+
 FSStorage.prototype.stat = function (key, cb) {
   key = normalize(this.dir, key)
   fs.stat(key, function (err, st) {

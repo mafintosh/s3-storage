@@ -82,6 +82,10 @@ Create a writeable stream to a key. Options include
 
 Rename a folder/file
 
+#### `s3.exists(key, callback)`
+
+Check if a key exists.
+
 #### `s3.stat(key, callback)`
 
 Return stat info about a key. The returned object looks like this:

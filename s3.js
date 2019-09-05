@@ -98,6 +98,14 @@ S3Storage.prototype.del = function (key, cb) {
   })
 }
 
+S3Storage.prototype.exists = function (key, cb) {
+  this.stat(key, function (err, st) {
+    if (err && err.code === 'NotFound') return cb(null, false)
+    if (err) return cb(err, false)
+    cb(null, true)
+  })
+}
+
 S3Storage.prototype.stat = function (key, cb) {
   var self = this
   this.ready(function (err) {
