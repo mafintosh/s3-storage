@@ -97,6 +97,11 @@ Return stat info about a key. The returned object looks like this:
 }
 ```
 
+#### `s3.versions(key, callback)`
+
+Get a list of versions of a specific key. You can pass the version to `stat`, `exists`, `get`, `createReadStream` and `del`
+to interact with a specific one.
+
 #### `var stream = s3.list([options])`
 
 Create a list stream. Each data emitted looks like this

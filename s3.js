@@ -20,6 +20,30 @@ function S3Storage (bucket, opts) {
   this.prefix = opts.prefix || null
 }
 
+S3Storage.prototype.versions = function (key, cb) {
+  var self = this
+  this.ready(function (err) {
+    if (err) return cb(err)
+    self.s3.listObjectVersions({
+      Bucket: self.bucket,
+      Prefix: join(self.prefix, key)
+    }, function (err, res) {
+      if (err) return cb(err)
+
+      var v = res.Versions.map(function (v) {
+        return {
+          key: v.Key.replace(self.prefix + '/', ''),
+          latest: v.IsLatest,
+          version: v.VersionId,
+          modified: v.LastModified
+        }
+      })
+
+      cb(null, v)
+    })
+  })
+}
+
 S3Storage.prototype.list =
 S3Storage.prototype.createListStream = function (opts) {
   if (!opts) opts = {}
@@ -85,7 +109,10 @@ S3Storage.prototype.rename = function (from, to, cb) {
   }
 }
 
-S3Storage.prototype.del = function (key, cb) {
+S3Storage.prototype.del = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.del(key, null, opts)
+
+  var v = opts && opts.version
   var self = this
 
   this.ready(function (err) {
@@ -93,26 +120,34 @@ S3Storage.prototype.del = function (key, cb) {
 
     self.s3.deleteObject({
       Bucket: self.bucket,
-      Key: join(self.prefix, key)
+      Key: join(self.prefix, key),
+      VersionId: v
     }, cb)
   })
 }
 
-S3Storage.prototype.exists = function (key, cb) {
-  this.stat(key, function (err, st) {
+S3Storage.prototype.exists = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.exists(key, null, opts)
+
+  this.stat(key, opts, function (err, st) {
     if (err && err.code === 'NotFound') return cb(null, false)
     if (err) return cb(err, false)
     cb(null, true)
   })
 }
 
-S3Storage.prototype.stat = function (key, cb) {
+S3Storage.prototype.stat = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.stat(key, null, opts)
+
+  var v = opts && opts.version
   var self = this
+
   this.ready(function (err) {
     if (err) return cb(err)
     self.s3.headObject({
       Bucket: self.bucket,
-      Key: join(self.prefix, key)
+      Key: join(self.prefix, key),
+      VersionId: v
     }, function (err, data) {
       if (err) return cb(err)
       cb(null, {
@@ -123,16 +158,18 @@ S3Storage.prototype.stat = function (key, cb) {
   })
 }
 
-S3Storage.prototype.createReadStream = function (key) {
+S3Storage.prototype.createReadStream = function (key, opts) {
   var proxy = duplexify()
   var self = this
+  var v = opts && opts.version
 
   proxy.setWritable(false)
   this.ready(function (err) {
     if (err) return proxy.destroy(err)
     proxy.setReadable(self.s3.getObject({
       Bucket: self.bucket,
-      Key: join(self.prefix, key)
+      Key: join(self.prefix, key),
+      VersionId: v
     }).createReadStream())
   })
 
@@ -214,16 +251,19 @@ S3Storage.prototype.put = function (key, buf, meta, cb) {
   })
 }
 
-S3Storage.prototype.get = function (key, cb) {
+S3Storage.prototype.get = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.get(key, null, opts)
   if (!cb) cb = noop
 
+  var v = opts && opts.version
   var self = this
   this.ready(function (err) {
     if (err) return cb(err)
 
     self.s3.getObject({
       Bucket: self.bucket,
-      Key: join(self.prefix, key)
+      Key: join(self.prefix, key),
+      VersionId: v
     }, function (err, data) {
       if (err) return cb(err)
       cb(null, data.Body, data.Metadata)

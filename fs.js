@@ -13,6 +13,13 @@ function FSStorage (dir, opts) {
   this.dir = path.resolve(path.join(dir.replace(/^fs:\/\//, ''), opts.prefix || ''))
 }
 
+FSStorage.prototype.versions = function (key, cb) {
+  this.stat(key, function (err) {
+    if (err) return cb(err)
+    cb(null, [])
+  })
+}
+
 FSStorage.prototype.list =
 FSStorage.prototype.createListStream = function (opts) {
   if (!opts) opts = {}
@@ -106,7 +113,9 @@ FSStorage.prototype.createReadStream = function (key) {
   return fs.createReadStream(key)
 }
 
-FSStorage.prototype.get = function (key, cb) {
+FSStorage.prototype.get = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.get(key, null, opts)
+
   key = normalize(this.dir, key)
   fs.readFile(key, function (err, body) {
     if (err) return cb(err)
@@ -119,7 +128,9 @@ FSStorage.prototype.get = function (key, cb) {
   })
 }
 
-FSStorage.prototype.exists = function (key, cb) {
+FSStorage.prototype.exists = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.exists(key, null, opts)
+
   this.stat(key, function (err) {
     if (err && err.code === 'ENOENT') return cb(null, false)
     if (err) return cb(err, false)
@@ -127,7 +138,9 @@ FSStorage.prototype.exists = function (key, cb) {
   })
 }
 
-FSStorage.prototype.stat = function (key, cb) {
+FSStorage.prototype.stat = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.stat(key, null, opts)
+
   key = normalize(this.dir, key)
   fs.stat(key, function (err, st) {
     if (err) return cb(err)
@@ -135,7 +148,8 @@ FSStorage.prototype.stat = function (key, cb) {
   })
 }
 
-FSStorage.prototype.del = function (key, cb) {
+FSStorage.prototype.del = function (key, opts, cb) {
+  if (typeof opts === 'function') return this.del(key, null, opts)
   if (!cb) cb = noop
 
   var self = this
