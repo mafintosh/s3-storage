@@ -29,14 +29,16 @@ S3Storage.prototype.versions = function (key, cb) {
       Prefix: join(self.prefix, key)
     }, function (err, res) {
       if (err) return cb(err)
+
       var v = res.Versions.map(function (v) {
         return {
-          key: v.Key,
+          key: v.Key.replace(self.prefix + '/', ''),
           latest: v.IsLatest,
           version: v.VersionId,
           modified: v.LastModified
         }
       })
+
       cb(null, v)
     })
   })
