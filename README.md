@@ -64,6 +64,17 @@ Read a value out
 
 Delete a value
 
+#### `s3.mdel(objects, [callback])`
+
+Delete multiple values. Objects should look like this:
+
+```js
+{
+  key: `value/key`, // required
+  version: `version` // optional
+}
+```
+
 #### `s3.createReadStream(key, options)`
 
 Create a readable stream to a key.
