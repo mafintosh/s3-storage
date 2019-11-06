@@ -176,9 +176,152 @@ S3Storage.prototype.createReadStream = function (key, opts) {
   return proxy
 }
 
+S3Storage.prototype.createMultipartStream = function (key, opts) {
+  if (typeof opts === 'number') opts = {length: opts}
+  if (!opts) opts = {}
+
+  var self = this
+  var pending = null
+  var batchSize = opts.batchSize || 4 * 1024 * 1024 * 1024
+  var lastSize = (opts.length % batchSize) || batchSize
+  var ws = bulk(write, flush)
+  var ondrain = null
+  var onflush = null
+  var flushed = false
+  var proxy = null
+  var missing = 0
+  var uploadId = null
+  var part = 1
+  var parts = Math.ceil(opts.length / batchSize)
+  var uploadedParts = new Array(parts)
+  var completed = 0
+  var s3Key = join(self.prefix, key)
+
+  this.ready(function (err) {
+    if (err) return ws.destroy(err)
+
+    self.s3.createMultipartUpload({
+      Bucket: self.bucket,
+      Key: s3Key
+    }, function (err, res) {
+      if (err) return ws.destroy(err)
+      uploadId = res.UploadId
+      if (ws.destroyed) return cleanup()
+      if (pending) write(pending[0], pending[1])
+    })
+  })
+
+  ws.on('close', function () {
+    if (completed !== parts) cleanup()
+  })
+
+  return ws
+
+  function cleanup () {
+    if (!uploadId) return
+    self.s3.abortMultipartUpload({
+      UploadId: uploadId,
+      Bucket: self.bucket,
+      Key: s3Key
+    }, function () {
+      // ... do nothing
+    })
+  }
+
+  function write (data, cb) {
+    if (!uploadId) {
+      pending = [data, cb]
+      return
+    }
+
+    var drained = true
+    for (var i = 0; i < data.length; i++) {
+      var d = data[i]
+
+      if (!missing) {
+        proxy = new stream.Readable({ read })
+        missing = addPart(proxy)
+        if (!missing) return cb(new Error('Writing too much'))
+      }
+
+      if (d.length < missing) {
+        drained = proxy.push(d)
+        missing -= d.length
+      } else if (d.length === missing) {
+        proxy.push(d)
+        missing = 0
+        proxy.push(null)
+        drained = true
+      } else {
+        proxy.push(d.slice(0, missing))
+        data[i--] = d.slice(missing)
+        missing = 0
+        proxy.push(null)
+        drained = true
+      }
+    }
+
+    if (!drained) ondrain = cb
+    else cb()
+  }
+
+  function flush (cb) {
+    if (flushed) return cb()
+    onflush = cb
+  }
+
+  function read () {
+    if (!ondrain) return
+    var cb = ondrain
+    ondrain = null
+    cb()
+  }
+
+  function addPart (body) {
+    var len = part === parts ? lastSize : batchSize
+    if (part > parts) return 0
+
+    var PartNumber = part++
+    self.s3.uploadPart({
+      UploadId: uploadId,
+      Bucket: self.bucket,
+      Key: s3Key,
+      Body: body,
+      PartNumber,
+      ContentLength: len
+    }, function (err, res) {
+      if (err) return ws.destroy(err)
+
+      uploadedParts[PartNumber - 1] = {
+        ETag: res.ETag,
+        PartNumber
+      }
+
+      if (++completed !== parts) return
+
+      self.s3.completeMultipartUpload({
+        UploadId: uploadId,
+        Bucket: self.bucket,
+        Key: s3Key,
+        MultipartUpload: {
+          Parts: uploadedParts
+        }
+      }, function (err) {
+        if (err) return ws.destroy(err)
+
+        flushed = true
+        if (onflush) onflush()
+      })
+    })
+
+    return len
+  }
+}
+
 S3Storage.prototype.createWriteStream = function (key, opts) {
   if (typeof opts === 'number') opts = {length: opts}
   if (!opts) opts = {}
+  if (opts.length > 4 * 1024 * 1024 * 1024) return this.createMultipartStream(key, opts)
 
   var self = this
   var ondrain = null
