@@ -108,9 +108,9 @@ FSStorage.prototype.put = function (key, val, meta, cb) {
   })
 }
 
-FSStorage.prototype.createReadStream = function (key) {
+FSStorage.prototype.createReadStream = function (key, opts) {
   key = normalize(this.dir, key)
-  return fs.createReadStream(key)
+  return fs.createReadStream(key, opts)
 }
 
 FSStorage.prototype.get = function (key, opts, cb) {

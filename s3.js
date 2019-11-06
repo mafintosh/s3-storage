@@ -163,13 +163,18 @@ S3Storage.prototype.createReadStream = function (key, opts) {
   var self = this
   var v = opts && opts.version
 
+  var Range = (opts && (typeof opts.start === 'number' || typeof opts.end === 'number'))
+    ? 'bytes=' + (opts.start || 0) + '-' + (typeof opts.end === 'number' ? opts.end : '')
+    : undefined
+
   proxy.setWritable(false)
   this.ready(function (err) {
     if (err) return proxy.destroy(err)
     proxy.setReadable(self.s3.getObject({
       Bucket: self.bucket,
       Key: join(self.prefix, key),
-      VersionId: v
+      VersionId: v,
+      Range
     }).createReadStream())
   })
 
