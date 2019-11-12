@@ -164,7 +164,7 @@ FSStorage.prototype.del = function (key, opts, cb) {
   })
 }
 
-FSStorage.prototype.mdel = function (objects, cb) {
+FSStorage.prototype.delBatch = function (objects, cb) {
   if (!cb) cb = noop
 
   var self = this

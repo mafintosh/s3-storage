@@ -126,7 +126,7 @@ S3Storage.prototype.del = function (key, opts, cb) {
   })
 }
 
-S3Storage.prototype.mdel = function (objects, cb) {
+S3Storage.prototype.delBatch = function (objects, cb) {
   var self = this
   this.ready(function (err) {
     if (err) return cb(err)

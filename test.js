@@ -179,13 +179,13 @@ function run (name, st) {
     })
   })
 
-  tape(name + ': mdel', function (t) {
+  tape(name + ': delBatch', function (t) {
     t.plan(7)
     st.put('hello', Buffer.from('hello'), function (err) {
       t.error(err, 'no error')
       st.put('world', Buffer.from('world'), function (err) {
         t.error(err, 'no error')
-        st.mdel([{key: 'hello'}, {key: 'world'}], function (err) {
+        st.delBatch([{key: 'hello'}, {key: 'world'}], function (err) {
           t.error(err, 'no error')
           st.exists('hello', function (err, exists) {
             t.error(err, 'no error')

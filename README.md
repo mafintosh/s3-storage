@@ -64,7 +64,7 @@ Read a value out
 
 Delete a value
 
-#### `s3.mdel(objects, [callback])`
+#### `s3.delBatch(objects, [callback])`
 
 Delete multiple values. Objects should look like this:
 
