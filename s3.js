@@ -126,6 +126,27 @@ S3Storage.prototype.del = function (key, opts, cb) {
   })
 }
 
+S3Storage.prototype.delBatch = function (objects, cb) {
+  if (!cb) cb = noop
+
+  var self = this
+  this.ready(function (err) {
+    if (err) return cb(err)
+
+    self.s3.deleteObjects({
+      Bucket: self.bucket,
+      Delete: {
+        Objects: objects.map(function (obj) {
+          return {
+            Key: join(self.prefix, obj.key),
+            VersionId: obj.version
+          }
+        })
+      }
+    }, cb)
+  })
+}
+
 S3Storage.prototype.exists = function (key, opts, cb) {
   if (typeof opts === 'function') return this.exists(key, null, opts)
 

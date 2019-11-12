@@ -164,6 +164,31 @@ FSStorage.prototype.del = function (key, opts, cb) {
   })
 }
 
+FSStorage.prototype.delBatch = function (objects, cb) {
+  if (!cb) cb = noop
+
+  var self = this
+  var i = -1
+  loop()
+  function loop (err) {
+    i++
+    if (err) return cb(err)
+    if (i >= objects.length) return cb()
+    del(objects[i], loop)
+  }
+
+  function del (obj, next) {
+    var key = normalize(self.dir, obj.key)
+    fs.unlink(key, function (err) {
+      if (err) return next(err)
+      fs.unlink(key + '.s3meta', function (err) {
+        if (err && err.code !== 'ENOENT') return next(err)
+        clean(self.dir, key, next)
+      })
+    })
+  }
+}
+
 FSStorage.prototype.rename = function (src, dest, cb) {
   if (!cb) cb = noop
 
