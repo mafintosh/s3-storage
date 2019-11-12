@@ -173,7 +173,7 @@ FSStorage.prototype.delBatch = function (objects, cb) {
   function loop (err) {
     i++
     if (err) return cb(err)
-    if (!objects[i]) return cb()
+    if (i >= objects.length) return cb()
     del(objects[i], loop)
   }
 
